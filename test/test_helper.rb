@@ -1,4 +1,4 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'vagrant/forwardports'
+require 'vagrant_forward_ports'
 
 require 'minitest/autorun'

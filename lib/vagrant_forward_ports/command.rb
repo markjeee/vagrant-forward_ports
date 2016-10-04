@@ -15,7 +15,23 @@ module VagrantForwardPorts
     end
 
     def execute
-      puts 'Hello World'
+      with_target_vms do |vm|
+        check_runable_on(vm)
+
+        ssh_opts = action.create_forwards(vm)
+
+        unless ssh_opts.empty?
+          @action.run_ssh(vm, ssh_opts)
+        end
+      end
+    end
+
+    def action
+      if defined?(@action) && !@action.nil?
+        @action
+      else
+        @action = Action.new(nil, nil)
+      end
     end
   end
 end

@@ -16,20 +16,20 @@ module VagrantForwardPorts
     end
 
     def call(env)
-      ssh_opts = create_forwards(env)
+      ssh_opts = create_forwards(env[:machine])
 
       unless ssh_opts.empty?
-        run_ssh(env, ssh_opts)
+        run_ssh(env[:machine], ssh_opts)
       end
 
       @app.call(env)
     end
 
-    def create_forwards(env)
+    def create_forwards(machine)
       ssh_opts = { }
       extra_args = [ ]
 
-      config = env[:machine].config.forward_ports
+      config = machine.config.forward_ports
 
       forwards = config.forwards
       unless forwards.nil? || forwards.empty?
@@ -51,19 +51,30 @@ module VagrantForwardPorts
       ssh_opts
     end
 
-    def run_ssh(env, ssh_opts)
-      info = get_and_check_info(env)
+    def run_ssh(machine, ssh_opts)
+      info = get_and_check_info(machine)
 
-      @env[:ui].info('Creating port forwards with SSH: %s' %
-                     ssh_opts[:extra_args].join(' '))
+      machine.ui.info('Creating port forwards with SSH: %s' %
+                      ssh_opts[:extra_args].join(' '))
 
       ssh_opts[:subprocess] = true
-      env[:ssh_run_exit_status] = Vagrant::Util::SSH.exec(info, ssh_opts)
+      exit_status = Vagrant::Util::SSH.exec(info, ssh_opts)
+
+      unless @env.nil?
+        @env[:ssh_run_exit_status] = exit_status
+      end
+
+      exit_status
     end
 
-    def get_and_check_info(env)
-      info = env[:ssh_info]
-      info ||= env[:machine].ssh_info
+    def get_and_check_info(machine)
+      unless @env.nil?
+        info = @env[:ssh_info]
+      else
+        info = nil
+      end
+
+      info ||= machine.ssh_info
 
       raise Errors::SSHNotReady if info.nil?
 
